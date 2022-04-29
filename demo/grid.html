@@ -171,17 +171,8 @@ subject to an additional IP rights grant found at http://polymer.github.io/PATEN
         </app-toolbar>
       </app-header>
 
-      <iron-list items="[[photos]]" as="photo" scroll-target="document" grid>
-        <template>
-          <div class="photoContainer">
-            <div class="photoContent" tabindex$="[[tabIndex]]">
-              <iron-image sizing="cover"
-                  src="https://farm[[photo.farm]].staticflickr.com/[[photo.server]]/[[photo.id]]_[[photo.secret]]_n.jpg">
-              </iron-image>
-              <div class="detail">[[photo.title]]</div>
-            </div>
-          </div>
-        </template>
+      <iron-list items="[[photos]]" as="photo" scroll-target="document" grid render-fn="[[ renderFn ]]">
+        <template><div></div></template>
       </iron-list>
 
       <div class="loadingIndicator" hidden$="[[!loadingPhotos]]">
@@ -210,6 +201,7 @@ subject to an additional IP rights grant found at http://polymer.github.io/PATEN
     import '@polymer/paper-spinner/paper-spinner.js';
     import '../iron-list.js';
     import {Polymer} from '@polymer/polymer/lib/legacy/polymer-fn.js';
+    import {html} from 'lit-html';
 
     Polymer({
 
@@ -279,6 +271,18 @@ subject to an additional IP rights grant found at http://polymer.github.io/PATEN
         if (searchText.trim() !== '') {
           this.debounce('_loadPhotos', this._loadMorePhotos, 400);
         }
+      },
+
+      renderFn: function(photo, index, tabIndex) {
+        return html`
+          <div class="photoContainer">
+            <div class="photoContent" tabindex=${tabIndex}>
+              <iron-image sizing="cover"
+                  .src="https://farm${photo.farm}.staticflickr.com/${photo.server}/${photo.id}_${photo.secret}_n.jpg">
+              </iron-image>
+              <div class="detail">${photo.title}</div>
+            </div>
+          </div>`
       }
 
     });
