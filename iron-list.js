@@ -23,6 +23,7 @@ import {enqueueDebouncer, flush} from '@polymer/polymer/lib/utils/flush.js';
 import {html} from '@polymer/polymer/lib/utils/html-tag.js';
 import {matches, translate} from '@polymer/polymer/lib/utils/path.js';
 import {TemplateInstanceBase} from '@polymer/polymer/lib/utils/templatize.js';
+import { render } from 'lit-html';
 
 var IOS = navigator.userAgent.match(/iP(?:hone|ad;(?: U;)? CPU) OS (\d+)/);
 var IOS_TOUCH_SCROLLING = IOS && IOS[1] >= 8;
@@ -376,7 +377,12 @@ Polymer({
      * there's some offset between the scrolling element and the list. For
      * example: a header is placed above the list.
      */
-    scrollOffset: {type: Number, value: 0}
+    scrollOffset: {type: Number, value: 0},
+
+    /**
+     * Uses lit to render the result.
+     */
+    renderFn: {type: Function}
   },
 
   observers: [
@@ -1237,16 +1243,20 @@ Polymer({
       var el = this._physicalItems[pidx];
       var item = this.items && this.items[vidx];
       if (item != null) {
-        var inst = this.modelForElement(el);
-        inst.__key__ = null;
-        this._forwardProperty(inst, this.as, item);
-        this._forwardProperty(
-            inst, this.selectedAs, this.$.selector.isSelected(item));
-        this._forwardProperty(inst, this.indexAs, vidx);
-        this._forwardProperty(
-            inst, 'tabIndex', this._focusedVirtualIndex === vidx ? 0 : -1);
-        this._physicalIndexForKey[inst.__key__] = pidx;
-        inst._flushProperties && inst._flushProperties(true);
+        if(this.renderFn) {
+          render(this.renderFn(item, vidx, this._focusedVirtualIndex === vidx ? 0 : -1), el)
+        } else {
+          var inst = this.modelForElement(el);
+          inst.__key__ = null;
+          this._forwardProperty(inst, this.as, item);
+          this._forwardProperty(
+              inst, this.selectedAs, this.$.selector.isSelected(item));
+          this._forwardProperty(inst, this.indexAs, vidx);
+          this._forwardProperty(
+              inst, 'tabIndex', this._focusedVirtualIndex === vidx ? 0 : -1);
+          this._physicalIndexForKey[inst.__key__] = pidx;
+          inst._flushProperties && inst._flushProperties(true);
+        }
         el.removeAttribute('hidden');
       } else {
         el.setAttribute('hidden', '');
