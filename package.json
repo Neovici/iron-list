@@ -36,8 +36,7 @@
   },
   "scripts": {
     "format": "webmat",
-    "generate-types": "gen-typescript-declarations --deleteExisting --outDir . --verify",
-    "prepare": "npm run generate-types"
+    "generate-types": "gen-typescript-declarations --deleteExisting --outDir . --verify"
   },
   "version": "3.1.0",
   "main": "iron-list.js",
