@@ -382,7 +382,7 @@ Polymer({
     /**
      * Uses lit to render the result.
      */
-    renderFn: {type: Function}
+    renderFn: {type: Function, observer: function() { this._applyRenderFn() }}
   },
 
   observers: [
