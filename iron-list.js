@@ -11,7 +11,6 @@ found at http://polymer.github.io/PATENTS.txt
 import '@polymer/polymer/polymer-legacy.js';
 import '@polymer/iron-a11y-keys-behavior/iron-a11y-keys-behavior.js';
 
-import {IronResizableBehavior} from '@polymer/iron-resizable-behavior/iron-resizable-behavior.js';
 import {IronScrollTargetBehavior} from '@polymer/iron-scroll-target-behavior/iron-scroll-target-behavior.js';
 import {OptionalMutableDataBehavior} from '@polymer/polymer/lib/legacy/mutable-data-behavior.js';
 import {Polymer as Polymer} from '@polymer/polymer/lib/legacy/polymer-fn.js';
@@ -22,7 +21,6 @@ import {Debouncer} from '@polymer/polymer/lib/utils/debounce.js';
 import {enqueueDebouncer, flush} from '@polymer/polymer/lib/utils/flush.js';
 import {html} from '@polymer/polymer/lib/utils/html-tag.js';
 import {matches, translate} from '@polymer/polymer/lib/utils/path.js';
-import {TemplateInstanceBase} from '@polymer/polymer/lib/utils/templatize.js';
 import { render } from 'lit-html';
 
 var IOS = navigator.userAgent.match(/iP(?:hone|ad;(?: U;)? CPU) OS (\d+)/);
@@ -394,7 +392,6 @@ Polymer({
 
   behaviors: [
     Templatizer,
-    IronResizableBehavior,
     IronScrollTargetBehavior,
     OptionalMutableDataBehavior
   ],
@@ -662,13 +659,6 @@ Polymer({
   },
 
   /**
-   * True if the current list is visible.
-   */
-  get _isVisible() {
-    return Boolean(this.offsetWidth || this.offsetHeight);
-  },
-
-  /**
    * Gets the index of the first visible item in the viewport.
    *
    * @type {number}
@@ -745,21 +735,20 @@ Polymer({
   /** @override */
   ready: function() {
     this.addEventListener('focus', this._didFocus.bind(this), true);
+    this.obs = new ResizeObserver(this._resizeHandler.bind(this))
   },
 
   /** @override */
   attached: function() {
     this._debounce('_render', this._render, animationFrame);
-    // `iron-resize` is fired when the list is attached if the event is added
-    // before attached causing unnecessary work.
-    this.listen(this, 'iron-resize', '_resizeHandler');
     this.listen(this, 'keydown', '_keydownHandler');
+    this.obs.observe(this);
   },
 
   /** @override */
   detached: function() {
-    this.unlisten(this, 'iron-resize', '_resizeHandler');
     this.unlisten(this, 'keydown', '_keydownHandler');
+    this.obs.unobserve(this);
   },
 
   /**
@@ -1024,7 +1013,7 @@ Polymer({
    * Renders the a new list.
    */
   _render: function() {
-    if (!this.isAttached || !this._isVisible) {
+    if (!this.isAttached) {
       return;
     }
     if (this._physicalCount !== 0) {
@@ -1067,7 +1056,6 @@ Polymer({
   _gridChanged: function(newGrid, oldGrid) {
     if (typeof oldGrid === 'undefined')
       return;
-    this.notifyResize();
     flush();
     newGrid && this._updateGridMetrics();
   },
@@ -1522,22 +1510,19 @@ Polymer({
    * A handler for the `iron-resize` event triggered by `IronResizableBehavior`
    * when the element is resized.
    */
-  _resizeHandler: function() {
-    this._debounce('_render', function() {
-      // clear cached visible index.
-      this._firstVisibleIndexVal = null;
-      this._lastVisibleIndexVal = null;
-      if (this._isVisible) {
-        this.updateViewportBoundaries();
-        // Reinstall the scroll event listener.
-        this.toggleScrollListener(true);
-        this._resetAverage();
-        this._render();
-      } else {
-        // Uninstall the scroll event listener.
-        this.toggleScrollListener(false);
-      }
-    }, animationFrame);
+  _resizeHandler: function(entries) {
+    this._firstVisibleIndexVal = null;
+    this._lastVisibleIndexVal = null;
+    if (entries[0]?.contentRect.width > 0) {
+      this.updateViewportBoundaries();
+      // Reinstall the scroll event listener.
+      this.toggleScrollListener(true);
+      this._resetAverage();
+      this._render();
+    } else {
+      // Uninstall the scroll event listener.
+      this.toggleScrollListener(false);
+    }
   },
 
   /**
