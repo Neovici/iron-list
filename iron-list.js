@@ -378,16 +378,17 @@ Polymer({
     scrollOffset: {type: Number, value: 0},
 
     /**
-     * Uses lit to render the result.
+     * Forwarded to the template instances.
      */
-    renderFn: {type: Function, observer: function() { this._applyRenderFn() }}
+    renderFn: {type: Function}
   },
 
   observers: [
     '_itemsChanged(items.*)',
     '_selectionEnabledChanged(selectionEnabled)',
     '_multiSelectionChanged(multiSelection)',
-    '_setOverflow(scrollTarget, scrollOffset)'
+    '_setOverflow(scrollTarget, scrollOffset)',
+    '_renderFnChanged(renderFn)'
   ],
 
   behaviors: [
@@ -1234,14 +1235,12 @@ Polymer({
       var item = this.items && this.items[vidx];
       if (item != null) {
         var inst = this.modelForElement(el);
-        if(this.renderFn) {
-          render(this.renderFn(item, vidx, this._focusedVirtualIndex === vidx ? 0 : -1, this.$.selector.isSelected(item)), el)
-        }
         inst.__key__ = null;
         this._forwardProperty(inst, this.as, item);
         this._forwardProperty(
             inst, this.selectedAs, this.$.selector.isSelected(item));
         this._forwardProperty(inst, this.indexAs, vidx);
+        this._forwardProperty(inst, 'renderFn', this.renderFn);
         this._forwardProperty(
             inst, 'tabIndex', this._focusedVirtualIndex === vidx ? 0 : -1);
         this._physicalIndexForKey[inst.__key__] = pidx;
@@ -1253,16 +1252,16 @@ Polymer({
     }, itemSet);
   },
 
-  _applyRenderFn: function(itemSet) {
-    if(!this.renderFn) { return }
+  _renderFnChanged: function(renderFn) {
     this._iterateItems(function(pidx, vidx) {
       var el = this._physicalItems[pidx];
       var item = this.items && this.items[vidx];
       if (item != null) {
         var inst = this.modelForElement(el);
-        render(this.renderFn(item, vidx, inst.tabIndex, inst[this.selectedAs]), el)
+        this._forwardProperty(inst, 'renderFn', renderFn);
+        inst._flushProperties(true);
       }
-    }, itemSet);
+    });
   },
 
   /**
@@ -1559,7 +1558,6 @@ Polymer({
       this.updateSizeForIndex(index);
     }
     this.$.selector.selectIndex(index);
-    this._applyRenderFn();
   },
 
   /**
@@ -1659,10 +1657,8 @@ Polymer({
     // Set a temporary tabindex
     modelTabIndex = model.tabIndex;
     model.tabIndex = SECRET_TABINDEX;
-    this._applyRenderFn();
     activeElTabIndex = activeEl ? activeEl.tabIndex : -1;
     model.tabIndex = modelTabIndex;
-    this._applyRenderFn();
     // Only select the item if the tap wasn't on a focusable child
     // or the element bound to `tabIndex`
     if (activeEl && physicalItem !== activeEl &&
@@ -1771,7 +1767,6 @@ Polymer({
     var focusable;
     // set a secret tab index
     model.tabIndex = SECRET_TABINDEX;
-    this._applyRenderFn();
     // check if focusable element is the physical item
     if (physicalItem.tabIndex === SECRET_TABINDEX) {
       focusable = physicalItem;
@@ -1783,7 +1778,6 @@ Polymer({
     }
     // restore the tab index
     model.tabIndex = 0;
-    this._applyRenderFn();
     // focus the focusable element
     this._focusedVirtualIndex = idx;
     focusable && focusable.focus();
@@ -1878,7 +1872,6 @@ Polymer({
       }
       // Set the tabIndex for the next focused item.
       targetModel.tabIndex = 0;
-      this._applyRenderFn();
       fidx = targetModel[this.indexAs];
       this._focusedVirtualIndex = fidx;
       this._focusedPhysicalIndex = this._getPhysicalIndex(fidx);
