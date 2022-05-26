@@ -1069,19 +1069,16 @@ Polymer({
    */
   _itemsChanged: function(change) {
     if (change.path === 'items') {
-      this._virtualStart = 0;
-      this._physicalTop = 0;
+      this._virtualStart = this._virtualStart || 0;
+      this._physicalTop = this._physicalTop ||0;
       this._virtualCount = this.items ? this.items.length : 0;
-      this._physicalIndexForKey = {};
-      this._firstVisibleIndexVal = null;
-      this._lastVisibleIndexVal = null;
+      this._physicalIndexForKey = this._physicalIndexForKey || {};
+      this._firstVisibleIndexVal = this._firstVisibleIndexVal || null;
+      this._lastVisibleIndexVal = this._lastVisibleIndexVal || null;
       this._physicalCount = this._physicalCount || 0;
       this._physicalItems = this._physicalItems || [];
       this._physicalSizes = this._physicalSizes || [];
-      this._physicalStart = 0;
-      if (this._scrollTop > this._scrollOffset) {
-        this._resetScrollPosition(0);
-      }
+      this._physicalStart = this._physicalStart || 0;
       this._removeFocusedItem();
       this._debounce('_render', this._render, animationFrame);
     } else if (change.path === 'items.splices') {
