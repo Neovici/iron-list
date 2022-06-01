@@ -1516,7 +1516,7 @@ Polymer({
       // Reinstall the scroll event listener.
       this.toggleScrollListener(true);
       this._resetAverage();
-      this._render();
+      requestAnimationFrame(() => this._render());
     } else {
       // Uninstall the scroll event listener.
       this.toggleScrollListener(false);
