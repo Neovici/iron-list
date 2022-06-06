@@ -744,14 +744,18 @@ Polymer({
     this._debounce('_render', this._render, animationFrame);
     this.listen(this, 'keydown', '_keydownHandler');
     this.obs.observe(this);
-    this.obs.observe(this.parentNode);
+    if(this.parentNode instanceof Element) {
+      this.obs.observe(this.parentNode);
+    }
   },
 
   /** @override */
   detached: function() {
     this.unlisten(this, 'keydown', '_keydownHandler');
     this.obs.unobserve(this);
-    this.obs.unobserve(this.parentNode);
+    if(this.parentNode instanceof Element) {
+      this.obs.unobserve(this.parentNode);
+    }
   },
 
   /**
