@@ -736,7 +736,7 @@ Polymer({
   /** @override */
   ready: function() {
     this.addEventListener('focus', this._didFocus.bind(this), true);
-    this.obs = new ResizeObserver(this._resizeHandler.bind(this))
+    this.obs = new ResizeObserver(this._onResize.bind(this))
   },
 
   /** @override */
@@ -1020,7 +1020,7 @@ Polymer({
    * Renders the a new list.
    */
   _render: function() {
-    if (!this.isAttached) {
+    if (!this.isAttached || !this._isVisible) {
       return;
     }
     if (this._physicalCount !== 0) {
@@ -1508,23 +1508,32 @@ Polymer({
     this._physicalAverageCount = 0;
   },
 
+  _onResize: function(entries) {
+    const box = entries[0].contentRect || {};
+    this._isVisible = box.width > 0 || box.height > 0;
+    this._resizeHandler();
+  },
+
   /**
    * A handler for the `iron-resize` event triggered by `IronResizableBehavior`
    * when the element is resized.
    */
-  _resizeHandler: function(entries) {
-    this._firstVisibleIndexVal = null;
-    this._lastVisibleIndexVal = null;
-    if (entries[0]?.contentRect.width > 0) {
-      this.updateViewportBoundaries();
-      // Reinstall the scroll event listener.
-      this.toggleScrollListener(true);
-      this._resetAverage();
-      requestAnimationFrame(() => this._render());
-    } else {
-      // Uninstall the scroll event listener.
-      this.toggleScrollListener(false);
-    }
+  _resizeHandler: function() {
+    this._debounce('_render', function() {
+      // clear cached visible index.
+      this._firstVisibleIndexVal = null;
+      this._lastVisibleIndexVal = null;
+      if (this._isVisible) {
+        this.updateViewportBoundaries();
+        // Reinstall the scroll event listener.
+        this.toggleScrollListener(true);
+        this._resetAverage();
+        this._render();
+      } else {
+        // Uninstall the scroll event listener.
+        this.toggleScrollListener(false);
+      }
+    }, animationFrame);
   },
 
   /**
